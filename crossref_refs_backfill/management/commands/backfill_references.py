@@ -22,8 +22,8 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
-from crossref_refs_backfill.models import ParsedReferenceList
-from crossref_refs_backfill.providers import (
+from plugins.crossref_refs_backfill.models import ParsedReferenceList
+from plugins.crossref_refs_backfill.providers import (
     from_html_galley,
     from_pdf_galley,
 )

@@ -104,6 +104,41 @@ def extract_citations_for_crossref(article):
 
 Total core diff: ~15 lines, no schema changes, no migrations. Existing journals that already deposit references via JATS galleys see no behavior change.
 
+### Alternative shape: use the existing event system
+
+After surveying existing Janeway plugins (`openlibhums/datacite`, `openlibhums/back_content`, etc.), the conventional mechanism for plugins to hook into deposit-pipeline lifecycle is the `events_logic.Events.register_for_event(EVENT, callback)` registry. Datacite uses it to subscribe `register_doi_automatically` to `ON_ARTICLE_ACCEPTED`, etc.
+
+A version of the change that uses this idiom instead of a new registry list:
+
+```python
+# src/identifiers/logic.py
+
+from events import logic as events_logic
+
+# Register a new event name. Convention: ON_<DOMAIN>_<VERB>.
+events_logic.Events.ON_CROSSREF_CITATION_LIST_BUILD = "on_crossref_citation_list_build"
+
+
+def extract_citations_for_crossref(article):
+    # Existing JATS-galley path. Unchanged.
+    # ...
+    if citations:
+        return citations
+
+    # NEW: fire the event; first callback to return a string wins.
+    results = events_logic.Events.raise_event(
+        events_logic.Events.ON_CROSSREF_CITATION_LIST_BUILD,
+        article=article,
+    )
+    for result in (results or []):
+        if result:
+            return result
+
+    return None
+```
+
+Open question for Andy: **does `Events.raise_event` return callback values, or is it fire-and-forget?** If fire-and-forget, the registry-list option above is cleaner; if it returns values, the event-based version is more idiomatic. This is the load-bearing thing to settle in the call.
+
 ## What the plugin contributes
 
 The plugin (separate repo, AGPLv3, follows `BirkbeckCTP/generic_plugin_generator` layout) registers three providers in priority order:

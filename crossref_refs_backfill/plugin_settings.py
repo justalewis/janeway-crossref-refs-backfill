@@ -7,29 +7,42 @@ Closes the gap that leaves journals like Poroi depositing empty
 `<citation_list/>` elements in Crossref despite having parseable
 references in their HTML/PDF galleys.
 
-The plugin contributes three citation-list providers (cached, HTML
-galley, PDF galley) registered with the deposit pipeline in priority
-order. The provider-registration mechanism here matches the proposal in
-INTEGRATION-SKETCH.md; if Andy lands a different shape after the call
-this `install()` is the only function that changes.
+Structure follows the conventions used by openlibhums/datacite — same
+shape of plugin class, install hook, settings-from-JSON, event
+registration. The architectural decision still pending Andy's review
+is how citation providers should be registered (see
+INTEGRATION-SKETCH.md).
 """
 
+from django.conf import settings
+
 from utils import plugins
+from utils.install import update_settings
 
 
 PLUGIN_NAME = "Crossref Reference Backfill"
-DISPLAY_NAME = "crossref_refs_backfill"
+DISPLAY_NAME = "Crossref Refs Backfill"
 DESCRIPTION = (
     "Contributes citation_list XML to Crossref deposits for articles "
     "whose render galley isn't JATS XML. Parses references directly "
     "from HTML galleys when available, falls back to GROBID on PDFs."
 )
 AUTHOR = "Justin Lewis"
-VERSION = "0.1.0"
-JANEWAY_VERSION = "1.7.0"
+VERSION = "0.1"
 SHORT_NAME = "crossref_refs_backfill"
 MANAGER_URL = "crossref_refs_backfill_manager"
-JANEWAY_PLUGIN = True
+JANEWAY_VERSION = "1.7.0"
+
+# GROBID sidecar endpoint. Used by the Tier 3 provider; the plugin
+# silently skips Tier 3 if GROBID isn't reachable, so a missing or
+# wrong value here doesn't break Tier 1/2 deposits.
+GROBID_URL = "http://localhost:8070"
+
+if settings.DEBUG:
+    # Match datacite's pattern of swapping to a test endpoint in DEBUG.
+    # GROBID itself doesn't have a test server, so this is the same URL
+    # — left as a hook in case we add a dev sidecar later.
+    GROBID_URL = "http://localhost:8070"
 
 
 class CrossrefRefsBackfillPlugin(plugins.Plugin):
@@ -38,7 +51,6 @@ class CrossrefRefsBackfillPlugin(plugins.Plugin):
     description = DESCRIPTION
     author = AUTHOR
     short_name = SHORT_NAME
-
     manager_url = MANAGER_URL
 
     version = VERSION
@@ -46,43 +58,38 @@ class CrossrefRefsBackfillPlugin(plugins.Plugin):
 
 
 def install():
-    """Register the plugin and its citation providers.
-
-    The provider-registration call here depends on a small core change
-    proposed in INTEGRATION-SKETCH.md — a module-level list in
-    `identifiers/logic.py` that `extract_citations_for_crossref` falls
-    through to when its current JATS-galley path returns None.
-
-    If Andy prefers a different mechanism (signal, Django settings list,
-    plugin registry class), this is the only function in the plugin
-    that has to change. The providers themselves don't care how they
-    get called.
-    """
+    """Register the plugin and load its per-journal settings."""
     CrossrefRefsBackfillPlugin.install()
-
-    # Provider registration — exact shape pending Andy's review.
-    try:
-        from identifiers.logic import register_citation_provider
-    except ImportError:
-        # Core PR not yet landed. The plugin still installs but won't
-        # contribute citations to deposits until the registration hook
-        # exists upstream.
-        return
-
-    from crossref_refs_backfill.providers import (
-        from_stored_reference_list,
-        from_html_galley,
-        from_pdf_galley,
+    update_settings(
+        file_path="plugins/crossref_refs_backfill/install/settings.json",
     )
-
-    # Order matters: cached results first (cheapest), then HTML parse
-    # (high confidence, no external deps), then GROBID/PDF (slowest,
-    # requires the GROBID sidecar to be reachable).
-    register_citation_provider(from_stored_reference_list)
-    register_citation_provider(from_html_galley)
-    register_citation_provider(from_pdf_galley)
 
 
 def hook_registry():
-    """Janeway template hooks. Empty in this iteration."""
-    return {}
+    """Janeway template hooks. Empty in this iteration; could add a
+    backfill-status item to the manager nav once UI is real."""
+    return CrossrefRefsBackfillPlugin.hook_registry()
+
+
+def register_for_events():
+    """Register citation-provider callbacks.
+
+    OPEN ARCHITECTURAL QUESTION (see INTEGRATION-SKETCH.md). Two
+    candidate mechanisms:
+
+    1. New event in core (preferred-looking after surveying existing
+       plugins): an `ON_CROSSREF_CITATION_LIST_BUILD` event fired by
+       `extract_citations_for_crossref` when the JATS-galley path
+       returns None. Plugins register callbacks here. Question for
+       Andy: does Janeway's event system support collecting return
+       values from callbacks (we need the first non-None XML string,
+       not fire-and-forget)?
+
+    2. New module-level list in `identifiers/logic.py` with a
+       `register_citation_provider` function. Less idiomatic but
+       clearer about return-value semantics.
+
+    Until Andy weighs in, this function is a no-op. The providers
+    themselves live in `providers.py` and are mechanism-agnostic.
+    """
+    return

@@ -1,0 +1,32 @@
+[
+  {
+    "group": {
+      "name": "plugin:crossref_refs_backfill"
+    },
+    "setting": {
+      "description": "Enable the Crossref reference backfill plugin for this journal. When on, the plugin contributes parsed references to Crossref deposits for articles whose render galley isn't JATS XML.",
+      "is_translatable": false,
+      "name": "enable_crossref_refs_backfill",
+      "pretty_name": "Enable Crossref Refs Backfill (PLUGIN)",
+      "type": "boolean"
+    },
+    "value": {
+      "default": ""
+    }
+  },
+  {
+    "group": {
+      "name": "plugin:crossref_refs_backfill"
+    },
+    "setting": {
+      "description": "URL of the GROBID instance used for Tier 3 (PDF-only) extraction. Tier 3 is silently skipped if GROBID isn't reachable. Default suits a same-host docker-compose setup.",
+      "is_translatable": false,
+      "name": "grobid_url",
+      "pretty_name": "GROBID URL",
+      "type": "text"
+    },
+    "value": {
+      "default": "http://localhost:8070"
+    }
+  }
+]

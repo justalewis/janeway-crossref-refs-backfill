@@ -21,8 +21,14 @@ from __future__ import annotations
 
 import os
 
-from crossref_refs_backfill.extractors import detect, tier1, tier2, tier3, build_xml
-from crossref_refs_backfill.models import ParsedReferenceList
+from plugins.crossref_refs_backfill.extractors import (
+    detect,
+    tier1,
+    tier2,
+    tier3,
+    build_xml,
+)
+from plugins.crossref_refs_backfill.models import ParsedReferenceList
 
 
 # GROBID endpoint. Tier 3 is skipped if this isn't reachable, so the

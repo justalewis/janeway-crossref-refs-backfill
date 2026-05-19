@@ -1,0 +1,35 @@
+{% extends "admin/core/base.html" %}
+{% load static %}
+
+{% block title %}Crossref Reference Backfill{% endblock %}
+
+{% block body %}
+<div class="content">
+  <h1>Crossref Reference Backfill</h1>
+  <p>
+    This plugin contributes parsed reference data to Crossref deposits
+    for articles whose render galley isn't JATS XML. See the
+    <a href="https://github.com/justalewis/janeway-crossref-refs-backfill">repository README</a>
+    for context.
+  </p>
+
+  <h2>Cache status for {{ request.journal.name }}</h2>
+  <table class="table">
+    <tr><th>Tier 1 (structured HTML)</th><td>{{ by_tier.tier1 }}</td></tr>
+    <tr><th>Tier 2 (footnoted HTML)</th><td>{{ by_tier.tier2 }}</td></tr>
+    <tr><th>Tier 3 (PDF + GROBID)</th><td>{{ by_tier.tier3 }}</td></tr>
+    <tr><th>Total cached</th><td>{{ cached_total }}</td></tr>
+    <tr><th>Review pending</th><td>{{ review_pending }}</td></tr>
+  </table>
+
+  <h2>How to backfill</h2>
+  <p>
+    Run the management command from the Janeway shell:
+  </p>
+  <pre>python manage.py backfill_references --journal {{ request.journal.code }} --dry-run</pre>
+  <p>
+    A button-driven trigger from this page is on the to-do list after
+    the design call.
+  </p>
+</div>
+{% endblock %}
