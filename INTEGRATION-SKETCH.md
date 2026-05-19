@@ -273,8 +273,7 @@ crossref_refs_backfill/
 
 The standalone scraper at `C:\Users\Justin\Desktop\Journal Reference Scrapers\Poroi\` becomes the pre-Janeway development sandbox: same code, validated against real samples, then ported into the plugin once the integration shape is settled.
 
-## Open questions for the call
-
+##Questions for Andy
 The places where Andy's input shapes the architecture before code is written:
 
 1. **The provider-registration shape.** Is a module-level list with `register_citation_provider()` the right idiom for Janeway plugins, or do you have a preferred mechanism — Django settings list, signal/event, a dedicated registry class? The first matters because plugins should hook in without monkey-patching, but Janeway has its own conventions and I don't want to invent a new one if there's already a precedent.
@@ -291,12 +290,3 @@ The places where Andy's input shapes the architecture before code is written:
 
 7. **The reference-data lifecycle going forward.** For journals like Poroi where new articles arrive as PDF-only, the backfill command can be re-run periodically — but there's also an `ON_ARTICLE_PUBLISHED` event we could hook to extract eagerly. Do you want the plugin to subscribe to that, or stay strictly pull-based?
 
-## Pre-call agenda (rough, 30 min)
-
-1. **5 min.** Walk through the integration point — open `logic.py:441` and `crossref_article.xml:91`, agree on what changes.
-2. **10 min.** Provider-chain shape (Q1, Q3, Q4) — pick the registration mechanism. This is the load-bearing decision.
-3. **5 min.** Plugin model and caching (Q2) — agree on whether `ParsedReferenceList` lives in plugin or core.
-4. **5 min.** Backfill command location (Q5) and event-subscription (Q7) — quick decisions.
-5. **5 min.** Open road — anything Andy wants to surface that isn't on this list.
-
-Followups (post-call): I open a draft GitHub issue capturing the agreed shape and a small WIP PR for the core change so we can both react to real code rather than abstract architecture.
