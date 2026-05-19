@@ -4,7 +4,7 @@ A Janeway plugin that contributes Crossref `<citation_list>` data for articles w
 
 Closes the gap that leaves journals like *Poroi* depositing empty `<citation_list/>` elements in Crossref despite having structured references in their HTML galleys (or recoverable references in their PDF galleys).
 
-**Status:** Scaffold / pre-design-review. Functional plugin code, but depends on a small upstream change in `openlibhums/janeway` (proposed in [INTEGRATION-SKETCH.md](../Journal%20Reference%20Scrapers/Poroi/INTEGRATION-SKETCH.md)) to register citation providers with the existing deposit pipeline. The current `install()` falls back gracefully if the upstream hook isn't present — the plugin loads but doesn't contribute citations to deposits until the core PR lands.
+**Status:** Scaffold / pre-design-review. Functional plugin code, but depends on a small upstream change in `openlibhums/janeway` (proposed in [INTEGRATION-SKETCH.md](./INTEGRATION-SKETCH.md)) to register citation providers with the existing deposit pipeline. The current `install()` falls back gracefully if the upstream hook isn't present — the plugin loads but doesn't contribute citations to deposits until the core PR lands.
 
 ## What it does
 
