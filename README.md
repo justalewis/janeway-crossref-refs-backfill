@@ -1,0 +1,65 @@
+# crossref_refs_backfill
+
+A Janeway plugin that contributes Crossref `<citation_list>` data for articles whose render galley isn't JATS XML.
+
+Closes the gap that leaves journals like *Poroi* depositing empty `<citation_list/>` elements in Crossref despite having structured references in their HTML galleys (or recoverable references in their PDF galleys).
+
+**Status:** Scaffold / pre-design-review. Functional plugin code, but depends on a small upstream change in `openlibhums/janeway` (proposed in [INTEGRATION-SKETCH.md](../Journal%20Reference%20Scrapers/Poroi/INTEGRATION-SKETCH.md)) to register citation providers with the existing deposit pipeline. The current `install()` falls back gracefully if the upstream hook isn't present — the plugin loads but doesn't contribute citations to deposits until the core PR lands.
+
+## What it does
+
+When a Crossref deposit is being built for an article that lacks a JATS XML render galley, the plugin's three providers are tried in order:
+
+1. **`from_stored_reference_list`** — return cached citation_list XML from a prior extraction (fastest)
+2. **`from_html_galley`** — parse references from an HTML galley using Tier 1 (`<p class="ref">`) or Tier 2 (footnoted Chicago notes) detection
+3. **`from_pdf_galley`** — POST a PDF galley to GROBID, parse the TEI output (slowest; skipped silently if GROBID isn't reachable)
+
+First non-None result wins. Results are cached in `ParsedReferenceList` so subsequent deposits don't re-parse.
+
+## Empirical baseline
+
+From an 8-galley Poroi sample (May 2026), 203 total references, 87 matched a Crossref DOI after enrichment:
+
+| Tier | Source type | Match rate |
+|---|---|---|
+| Tier 1 | structured HTML | ~30–38% |
+| Tier 2 | footnoted HTML  | ~22% |
+| Tier 3 | PDF + GROBID    | 17–57% (Janeway-era at the high end) |
+
+Match rates put *Poroi* in the same band as *Across the Disciplines* and *The WAC Journal* (other Justin-Lewis journal scrapers), with the Janeway-era pool tracking the WAC Journal's recent-volumes band.
+
+## Repository layout
+
+```
+crossref_refs_backfill/
+├─ plugin_settings.py            Janeway plugin metadata + install() hook
+├─ models.py                     ParsedReferenceList cache
+├─ providers.py                  three providers wired to the extractors
+├─ extractors/
+│  ├─ detect.py                  tier detection
+│  ├─ tier1.py                   structured-HTML parser
+│  ├─ tier2.py                   footnoted-HTML parser
+│  ├─ tier3.py                   PDF + GROBID parser
+│  └─ build_xml.py               <citation_list> emitter
+├─ management/
+│  └─ commands/
+│     └─ backfill_references.py  one-time-per-journal backfill orchestrator
+├─ migrations/                   (Django creates these on first migrate)
+└─ tests/                        (placeholder; tests against Poroi samples to come)
+```
+
+## How this relates to the Poroi sandbox
+
+The standalone scraper at `C:\Users\Justin\Desktop\Journal Reference Scrapers\Poroi\` is the development sandbox where the three extractors and the CrossRef-matching enricher were validated. The code in `extractors/` is a port from there with one adaptation: each tier's primary entry point takes content (bytes or text) directly so the plugin can pass `galley.file.get_file(article)` without writing to disk.
+
+The sandbox stays in place after this plugin lands. It's the right environment for adding new tiers (e.g., for journals on other platforms), tightening the heuristics, or running before-and-after comparisons.
+
+## Open architectural questions
+
+Pending Andy Byers's review at the call. See `INTEGRATION-SKETCH.md` for the full list. The biggest one:
+
+- **Provider-registration mechanism.** The `install()` here uses a module-level list in `identifiers/logic.py` (per the sketch). Janeway may prefer a Django settings list, an event/signal, or a registry class. The providers themselves don't care which; only `install()` would change.
+
+## License
+
+AGPL v3 (to match Janeway's license).
