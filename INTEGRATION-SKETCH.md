@@ -273,9 +273,7 @@ crossref_refs_backfill/
 
 The standalone scraper at `C:\Users\Justin\Desktop\Journal Reference Scrapers\Poroi\` becomes the pre-Janeway development sandbox: same code, validated against real samples, then ported into the plugin once the integration shape is settled.
 
-##Questions for Andy
-The places where Andy's input shapes the architecture before code is written:
-
+## Questions for Andy
 1. **The provider-registration shape.** Is a module-level list with `register_citation_provider()` the right idiom for Janeway plugins, or do you have a preferred mechanism — Django settings list, signal/event, a dedicated registry class? The first matters because plugins should hook in without monkey-patching, but Janeway has its own conventions and I don't want to invent a new one if there's already a precedent.
 
 2. **Caching location.** The plugin owns a `ParsedReferenceList` model right now. Reasonable, or would you rather a caching layer in core that any provider plugin can populate? The latter would let multiple plugins share a cache and would survive plugin uninstalls.
